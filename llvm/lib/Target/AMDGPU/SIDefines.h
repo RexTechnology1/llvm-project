@@ -1134,10 +1134,6 @@ enum Type {
   NAMED_BARRIER_LAST = 16,
 };
 
-enum {
-  BARRIER_SCOPE_WORKGROUP = 0,
-};
-
 } // namespace Barrier
 } // namespace AMDGPU
 
