@@ -4759,7 +4759,8 @@ SDValue DAGTypeLegalizer::SplitVecOp_ATOMIC_STORE(AtomicSDNode *N) {
   // integer-of-element-size form does.
   unsigned NumElts = VT.getVectorNumElements();
   EVT IntEltVT = EVT::getIntegerVT(Ctx, VT.getScalarSizeInBits());
-  EVT IntVecVT = EVT::getVectorVT(Ctx, IntEltVT, NumElts);
+  EVT IntVecVT = VT.changeVectorElementTypeToInteger();
+  EVT IntEltVT = IntVecVT.getVectorElementType();
   if (DAG.getDataLayout().isLittleEndian() && TLI.isTypeLegal(MemIntVT) &&
       IntEltVT.getSizeInBits() <= MemIntVT.getSizeInBits()) {
     EVT WideVT = IntVecVT;
