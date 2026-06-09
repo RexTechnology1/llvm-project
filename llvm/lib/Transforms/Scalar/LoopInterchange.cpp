@@ -461,9 +461,12 @@ public:
   bool canInterchangeLoops(unsigned InnerLoopId, unsigned OuterLoopId,
                            CharMatrix &DepMatrix);
 
-  /// Discover induction PHIs in the header of \p L. Induction
-  /// PHIs are added to \p Inductions.
-  bool findInductions(Loop *L, SmallVectorImpl<PHINode *> &Inductions);
+  /// Discover induction PHIs in the header of \p Inner. Induction PHIs are
+  /// added to \p Inductions. Return true if all induction PHIs in the header of
+  /// \p Inner have a step value which is invariant with respect to \p Outer,
+  /// and at least one such induction PHI is found.
+  bool findInductions(Loop *Outer, Loop *Inner,
+                      SmallVectorImpl<PHINode *> &Inductions);
 
   /// Check if the loop structure is understood. We do not handle triangular
   /// loops for now.
@@ -1372,11 +1375,17 @@ bool LoopInterchangeLegality::currentLimitations() {
 }
 
 bool LoopInterchangeLegality::findInductions(
-    Loop *L, SmallVectorImpl<PHINode *> &Inductions) {
-  for (PHINode &PHI : L->getHeader()->phis()) {
+    Loop *OuterLoop, Loop *InnerLoop, SmallVectorImpl<PHINode *> &Inductions) {
+  for (PHINode &PHI : InnerLoop->getHeader()->phis()) {
     InductionDescriptor ID;
-    if (InductionDescriptor::isInductionPHI(&PHI, L, SE, ID))
-      Inductions.push_back(&PHI);
+    if (!InductionDescriptor::isInductionPHI(&PHI, InnerLoop, SE, ID))
+      continue;
+    const SCEV *Step = ID.getStep();
+    if (!SE->isLoopInvariant(Step, OuterLoop)) {
+      Inductions.clear();
+      return false;
+    }
+    Inductions.push_back(&PHI);
   }
   return !Inductions.empty();
 }
@@ -1526,7 +1535,7 @@ bool LoopInterchangeLegality::canInterchangeLoops(unsigned InnerLoopId,
       return false;
     }
 
-  if (!findInductions(InnerLoop, InnerLoopInductions)) {
+  if (!findInductions(OuterLoop, InnerLoop, InnerLoopInductions)) {
     LLVM_DEBUG(dbgs() << "Could not find inner loop induction variables.\n");
     return false;
   }
