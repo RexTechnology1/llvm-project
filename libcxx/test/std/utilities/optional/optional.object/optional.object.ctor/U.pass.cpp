@@ -16,6 +16,7 @@
 #include <cassert>
 #include <optional>
 #include <type_traits>
+#include <vector>
 
 #include "test_macros.h"
 #include "archetypes.h"
@@ -42,6 +43,18 @@ struct ExplicitThrow {
 struct ImplicitAny {
   template <class U>
   constexpr ImplicitAny(U&&) {}
+};
+
+struct ImplicitNoThrow {
+  constexpr ImplicitNoThrow(int) noexcept {}
+};
+
+struct ExplicitNoThrow {
+  constexpr explicit ExplicitNoThrow(int) noexcept {}
+};
+
+struct Row {
+  int x;
 };
 
 template <class To, class From>
@@ -98,6 +111,10 @@ void test_implicit() {
     static_assert(!test_convertible<O, std::in_place_t&&>(), "");
     static_assert(!test_convertible<O, const std::in_place_t&&>(), "");
   }
+  {
+    ASSERT_NOEXCEPT(optional<ImplicitNoThrow>(42));
+    ASSERT_NOT_NOEXCEPT(optional<ImplicitThrow>(42));
+  }
 #ifndef TEST_HAS_NO_EXCEPTIONS
   {
     try {
@@ -138,6 +155,15 @@ void test_explicit() {
       assert(t.value().value == 42);
     }
     assert(T::alive == 0);
+  }
+  {
+    ASSERT_NOEXCEPT(optional<ExplicitNoThrow>(42));
+    ASSERT_NOT_NOEXCEPT(optional<ExplicitThrow>(42));
+  }
+  {
+    using Vec = std::vector<Row>;
+    ASSERT_NOEXCEPT(optional<Vec>(std::declval<Vec&&>()));
+    static_assert(std::is_nothrow_constructible<optional<Vec>, Vec&&>::value, "");
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
   {

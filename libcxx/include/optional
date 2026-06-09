@@ -985,18 +985,14 @@ public:
 
   template <class _Up = _Tp, enable_if_t<_CheckOptionalArgsCtor<_Up>::template __enable_implicit<_Up>(), int> = 0>
   _LIBCPP_HIDE_FROM_ABI constexpr optional(_Up&& __v)
-#    if _LIBCPP_STD_VER >= 26
-      noexcept(is_lvalue_reference_v<_Tp> && is_nothrow_constructible_v<_Tp&, _Up>)
-#    endif
+      noexcept(is_nothrow_constructible_v<_Tp, _Up>)
       : __base(in_place, std::forward<_Up>(__v)) {
   }
 
   template <class _Up                                                                        = remove_cv_t<_Tp>,
             enable_if_t<_CheckOptionalArgsCtor<_Up>::template __enable_explicit<_Up>(), int> = 0>
   _LIBCPP_HIDE_FROM_ABI constexpr explicit optional(_Up&& __v)
-#    if _LIBCPP_STD_VER >= 26
-      noexcept(is_lvalue_reference_v<_Tp> && is_nothrow_constructible_v<_Tp&, _Up>)
-#    endif
+      noexcept(is_nothrow_constructible_v<_Tp, _Up>)
       : __base(in_place, std::forward<_Up>(__v)) {
   }
 
